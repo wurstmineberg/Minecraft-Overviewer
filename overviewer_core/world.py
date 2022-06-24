@@ -1678,6 +1678,8 @@ class RegionSet(object):
             # starting with 1.16 snapshot 20w17a, block states are packed differently
             longarray_unpacker = self._packed_longarray_to_shorts_v116
 
+        include_chunk = False
+        below_zero_retrogen_target_status = None
         # From the interior of a map to the edge, a chunk's status may be one of:
         # - postprocessed (interior, or next to fullchunk)
         # - fullchunk (next to decorated)
@@ -1688,8 +1690,18 @@ class RegionSet(object):
         # Empty is self-explanatory, and liquid_carved and carved seem to correspond
         # to SkyLight not being calculated, which results in mostly-black chunks,
         # so we'll just pretend they aren't there.
-        if chunk_data.get("Status", "") not in ("full", "postprocessed", "fullchunk",
+        if chunk_data.get("Status", "") in ("full", "postprocessed", "fullchunk",
                                                 "mobs_spawned", "spawn", ""):
+            include_chunk = True
+
+        else:
+            below_zero_retrogen_target_status = (
+                chunk_data.get("below_zero_retrogen", {}).get("target_status")
+            )
+            if below_zero_retrogen_target_status in ("heightmaps", "spawn"):
+                include_chunk = True
+
+        if not include_chunk:
             raise ChunkDoesntExist("Chunk %s,%s doesn't exist" % (x,z))
 
         # Turn the Biomes array into a 16x16 numpy array
